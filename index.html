@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RateFlow • Performance Reviews</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { overflow-x: hidden; }
+    select, input, textarea { max-width: 100%; }
+    button { touch-action: manipulation; }
+
+    body { 
+      background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%); 
+      color: #e2e8f0; 
+    }
+    .card { 
+      background-color: #1e2937; 
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); 
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-12">
+  <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-center sm:justify-between gap-5 mb-10 text-center sm:text-left">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-chart-line text-4xl text-indigo-400"></i>
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-bold">Rate It Personally</h1>
+          <p class="text-slate-400 text-sm -mt-1">Performance Reviews</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth -->
+    <div id="authScreen" class="max-w-sm mx-auto">
+      <div id="loginForm" class="card p-6 sm:p-10 rounded-3xl">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-6">Sign In</h2>
+        <input id="loginUsername" class="w-full p-3 sm:p-4 bg-slate-800 border border-slate-600 rounded-2xl mb-4 text-base" placeholder="Username" />
+        <input id="loginPassword" type="password" class="w-full p-3 sm:p-4 bg-slate-800 border border-slate-600 rounded-2xl mb-6 text-base" placeholder="Password" />
+        <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl text-lg font-semibold">Sign In</button>
+        <p onclick="toggleForms()" class="text-center text-indigo-400 mt-6 cursor-pointer hover:underline text-sm">Create new account</p>
+      </div>
+
+      <div id="signupForm" class="card p-6 sm:p-10 rounded-3xl hidden">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-6">Create Account</h2>
+        <input id="signupUsername" class="w-full p-3 sm:p-4 bg-slate-800 border border-slate-600 rounded-2xl mb-4 text-base" placeholder="Username" />
+        <input id="signupPassword" type="password" class="w-full p-3 sm:p-4 bg-slate-800 border border-slate-600 rounded-2xl mb-6 text-base" placeholder="Password" />
+        <button onclick="signup()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl text-lg font-semibold">Create Account</button>
+        <p onclick="toggleForms()" class="text-center text-indigo-400 mt-6 cursor-pointer hover:underline text-sm">Back to Login</p>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+        <div id="welcome" class="text-2xl sm:text-3xl font-bold"></div>
+        <div class="flex gap-3 w-full sm:w-auto">
+          <button onclick="showMyCategories()" class="flex-1 sm:flex-none bg-violet-600 hover:bg-violet-500 px-5 py-3 rounded-3xl font-medium text-sm">My Categories</button>
+          <button onclick="logout()" class="flex-1 sm:flex-none px-5 py-3 text-red-400 hover:text-red-500">Logout</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+        <button onclick="showScreen('evaluate')" class="bg-emerald-600 hover:bg-emerald-500 py-5 rounded-3xl font-semibold flex items-center justify-center gap-2">New Review</button>
+        <button onclick="showScreen('history')" class="bg-slate-700 hover:bg-slate-600 py-5 rounded-3xl font-semibold flex items-center justify-center gap-2">History</button>
+      </div>
+
+      <!-- Evaluate -->
+      <div id="evaluateScreen" class="card p-5 sm:p-8 lg:p-10 rounded-3xl hidden">
+        <h2 class="text-xl sm:text-2xl font-semibold mb-8">New Performance Review</h2>
+        <div class="grid grid-cols-1 gap-6 mb-10">
+          <input id="evalName" class="w-full p-3 sm:p-4 rounded-2xl bg-slate-800" placeholder="Full Name">
+          <input id="evalDate" type="date" class="w-full p-3 sm:p-4 rounded-2xl bg-slate-800">
+          <input id="evalOccupation" class="w-full p-3 sm:p-4 rounded-2xl bg-slate-800" placeholder="Occupation">
+        </div>
+        <div id="categories" class="space-y-6"></div>
+        <textarea id="comments" class="w-full mt-8 p-4 sm:p-5 bg-slate-800 rounded-3xl h-28" placeholder="Additional feedback..."></textarea>
+        <div class="mt-10 flex flex-col lg:flex-row items-center lg:justify-between gap-6">
+          <div id="totalScore" class="text-3xl sm:text-4xl lg:text-5xl font-bold text-emerald-400">5.00 / 5</div>
+          <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <button onclick="submitEvaluation()" class="w-full sm:w-auto bg-emerald-600 px-8 py-4 rounded-3xl font-semibold">Submit</button>
+            <button onclick="exportPDF()" class="w-full sm:w-auto bg-indigo-600 px-8 py-4 rounded-3xl font-semibold">PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div id="historyScreen" class="card p-5 sm:p-8 lg:p-10 rounded-3xl hidden">
+        <h2 class="text-xl sm:text-2xl font-semibold mb-8">Review History</h2>
+        <div id="historyList" class="space-y-6"></div>
+      </div>
+
+      <!-- My Categories -->
+      <div id="myCategoriesScreen" class="card p-5 sm:p-8 lg:p-10 rounded-3xl hidden">
+        <h2 class="text-xl sm:text-2xl font-semibold mb-8">My Categories (Exactly 5)</h2>
+        <div class="flex flex-col sm:flex-row gap-3 mb-8">
+          <input id="newCategoryInput" class="w-full sm:flex-1 p-4 bg-slate-700 rounded-2xl" placeholder="New Category Name">
+          <button onclick="replaceCategory()" class="w-full sm:w-auto bg-violet-600 px-8 py-4 rounded-2xl">Replace</button>
+        </div>
+        <div id="myCategoryList" class="space-y-3"></div>
+        <button onclick="showScreen('evaluate')" class="mt-8 w-full sm:w-auto bg-indigo-600 px-8 py-3 rounded-2xl">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let users = JSON.parse(localStorage.getItem('users')) || [{username: "admin", password: "1234", role: "admin"}];
+    let evaluations = JSON.parse(localStorage.getItem('evaluations')) || [];
+
+    const defaultCategories = ["Quality of Work", "Productivity", "Teamwork", "Communication", "Initiative"];
+
+    function getUserCategories() {
+      let cats = JSON.parse(localStorage.getItem(`categories_${currentUser.username}`));
+      if (!cats || cats.length !== 5) {
+        cats = [...defaultCategories];
+        localStorage.setItem(`categories_${currentUser.username}`, JSON.stringify(cats));
+      }
+      return cats;
+    }
+
+    function checkLogin() {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        document.getElementById('welcome').innerHTML = `Welcome, <span class="text-indigo-400">${currentUser.username}</span>`;
+        renderCategories();
+        showScreen('evaluate');
+      }
+    }
+
+    function toggleForms() {
+      document.getElementById('loginForm').classList.toggle('hidden');
+      document.getElementById('signupForm').classList.toggle('hidden');
+    }
+
+    function signup() {
+      const username = document.getElementById('signupUsername').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      if (!username || !password) return alert("Please fill all fields");
+      if (users.find(u => u.username === username)) return alert("Username taken");
+      users.push({ username, password, role: "evaluator" });
+      localStorage.setItem('users', JSON.stringify(users));
+      alert("Account created!");
+      toggleForms();
+    }
+
+    function login() {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const user = users.find(u => u.username === username && u.password === password);
+      if (!user) return alert("Invalid login");
+      currentUser = user;
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('welcome').innerHTML = `Welcome, <span class="text-indigo-400">${user.username}</span>`;
+      renderCategories();
+      showScreen('evaluate');
+    }
+
+    function logout() {
+      if (currentUser) {
+        localStorage.setItem(`categories_${currentUser.username}`, JSON.stringify(defaultCategories));
+      }
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('authScreen').classList.remove('hidden');
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('categories');
+      container.innerHTML = '';
+      const cats = getUserCategories();
+      cats.forEach((cat, i) => {
+        const div = document.createElement('div');
+        div.className = "card p-5 sm:p-7 rounded-3xl";
+        div.innerHTML = `
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="font-medium">${cat}</div>
+            <select id="score${i}" onchange="updateTotal()" class="w-full sm:w-auto bg-slate-700 px-5 py-3 rounded-2xl text-base font-medium">
+              <option value="1.00">Band 4 - Excellent (1.00)</option>
+              <option value="0.75">Band 3 - Good (0.75)</option>
+              <option value="0.50" selected>Band 2 - Satisfactory (0.50)</option>
+              <option value="0.25">Band 1 - Needs Improvement (0.25)</option>
+              <option value="0.00">Band 0 - Poor (0.00)</option>
+            </select>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function updateTotal() {
+      let total = 0;
+      for (let i = 0; i < 5; i++) {
+        total += parseFloat(document.getElementById(`score${i}`).value);
+      }
+      document.getElementById('totalScore').textContent = total.toFixed(2) + " / 5";
+    }
+
+    function submitEvaluation() {
+      const name = document.getElementById('evalName').value;
+      if (!name) return alert("Please enter name");
+      const cats = getUserCategories();
+      const scores = [];
+      for (let i = 0; i < 5; i++) {
+        scores.push({
+          category: cats[i],
+          score: parseFloat(document.getElementById(`score${i}`).value)
+        });
+      }
+      const total = scores.reduce((a, c) => a + c.score, 0).toFixed(2);
+
+      evaluations.unshift({
+        id: Date.now(),
+        name: name,
+        date: document.getElementById('evalDate').value || new Date().toISOString().split('T')[0],
+        occupation: document.getElementById('evalOccupation').value,
+        categories: scores,
+        total: total,
+        comments: document.getElementById('comments').value,
+        username: currentUser.username
+      });
+      localStorage.setItem('evaluations', JSON.stringify(evaluations));
+      alert("Review saved!");
+      showScreen('history');
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('historyList');
+      container.innerHTML = evaluations.length === 0 ? '<p class="text-center py-12 text-slate-400">No reviews yet.</p>' : '';
+
+      const myReviews = evaluations.filter(ev => ev.username === currentUser.username);
+
+      myReviews.forEach(ev => {
+        let details = ev.categories.map(c => `<div class="text-sm">${c.category}: <strong>${c.score}</strong></div>`).join('');
+        const div = document.createElement('div');
+        div.className = "bg-slate-800 p-6 rounded-3xl";
+        div.innerHTML = `
+          <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <div>
+              <h3 class="font-semibold text-lg">${ev.name}</h3>
+              <p class="text-slate-400">${ev.date} • ${ev.occupation || 'N/A'}</p>
+              <div class="mt-4 grid grid-cols-2 gap-x-6">${details}</div>
+            </div>
+            <div class="text-4xl sm:text-5xl font-bold text-emerald-400">${ev.total}/5</div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function showScreen(screen) {
+      document.getElementById('evaluateScreen').classList.add('hidden');
+      document.getElementById('historyScreen').classList.add('hidden');
+      document.getElementById('myCategoriesScreen').classList.add('hidden');
+      document.getElementById(screen + 'Screen').classList.remove('hidden');
+      if (screen === 'history') renderHistory();
+    }
+
+    function showMyCategories() {
+      document.getElementById('evaluateScreen').classList.add('hidden');
+      document.getElementById('historyScreen').classList.add('hidden');
+      document.getElementById('myCategoriesScreen').classList.remove('hidden');
+      renderMyCategories();
+    }
+
+    function renderMyCategories() {
+      const container = document.getElementById('myCategoryList');
+      container.innerHTML = '';
+      const cats = getUserCategories();
+      cats.forEach((cat, i) => {
+        const div = document.createElement('div');
+        div.className = "bg-slate-700 p-5 rounded-2xl flex justify-between items-center";
+        div.innerHTML = `
+          <span class="font-medium">${cat}</span>
+          <button onclick="replaceThisCategory(${i})" class="text-amber-400 text-sm">Replace</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function replaceThisCategory(index) {
+      const newName = prompt("Enter new category name:");
+      if (newName && newName.trim() !== "") {
+        let cats = getUserCategories();
+        cats[index] = newName.trim();
+        localStorage.setItem(`categories_${currentUser.username}`, JSON.stringify(cats));
+        renderMyCategories();
+        alert("Category replaced!");
+      }
+    }
+
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFillColor(79, 70, 229);
+      doc.rect(0, 0, 210, 40, 'F');
+      doc.setTextColor(255);
+      doc.setFontSize(22);
+      doc.text("PERFORMANCE EVALUATION REPORT", 20, 28);
+      doc.setTextColor(0);
+      doc.setFontSize(13);
+      doc.text(`Evaluated: ${document.getElementById('evalName').value || 'N/A'}`, 20, 60);
+      doc.text(`Score: ${document.getElementById('totalScore').textContent}`, 20, 80);
+      doc.save("Performance_Review.pdf");
+    }
+
+    checkLogin();
+  </script>
+</body>
+</html>
